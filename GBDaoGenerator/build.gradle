@@ -19,7 +19,7 @@ sourceSets {
     }
 }
 
-mainClassName = "nodomain.freeyourgadget.gadgetbridge.daogen.GBDaoGenerator"
+mainClassName = "nodomain.freeyourgadget.hsgadgetbridge.daogen.GBDaoGenerator"
 
 task genSources(type: JavaExec) {
     main = mainClassName

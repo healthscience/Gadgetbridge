@@ -1,11 +1,12 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
-    package="nodomain.freeyourgadget.gadgetbridge">
+    package="nodomain.freeyourgadget.hsgadgetbridge">
 
     <!--
         Comment in for testing Pebble Emulator
         <uses-permission android:name="android.permission.INTERNET" />
     -->
+    <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.BLUETOOTH" />
     <uses-permission android:name="android.permission.BLUETOOTH_ADMIN" />
     <uses-permission android:name="android.permission.READ_PHONE_STATE" />
@@ -353,7 +354,7 @@
         </receiver>
         <receiver
             android:enabled="true"
-            android:name="nodomain.freeyourgadget.gadgetbridge.database.PeriodicExporter"
+            android:name="nodomain.freeyourgadget.hsgadgetbridge.database.PeriodicExporter"
             android:exported="false">
 
         </receiver>
@@ -410,7 +411,7 @@
 
         <provider
             android:name=".contentprovider.PebbleContentProvider"
-            android:authorities="com.getpebble.android.provider"
+            android:authorities="com.getpebblehs.android.provider"
             android:exported="true" />
 
         <provider
@@ -443,7 +444,7 @@
             android:parentActivityName=".activities.appmanager.AppManagerActivity">
             <meta-data
                 android:name="android.support.PARENT_ACTIVITY"
-                android:value="nodomain.freeyourgadget.gadgetbridge.activities.ControlCenterv2" />
+                android:value="nodomain.freeyourgadget.hsgadgetbridge.activities.ControlCenterv2" />
             <intent-filter>
                 <action android:name="android.intent.action.VIEW"/>
                 <category android:name="android.intent.category.DEFAULT"/>

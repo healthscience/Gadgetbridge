@@ -5,7 +5,7 @@
     android:layout_height="match_parent"
     app:layout_behavior="@string/appbar_scrolling_view_behavior"
     android:fitsSystemWindows="true"
-    tools:context="nodomain.freeyourgadget.gadgetbridge.activities.ConfigureAlarms">
+    tools:context="nodomain.freeyourgadget.hsgadgetbridge.activities.ConfigureAlarms">
 
     <android.support.v7.widget.RecyclerView
         android:layout_width="match_parent"

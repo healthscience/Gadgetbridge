@@ -2,12 +2,14 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    tools:context="nodomain.freeyourgadget.gadgetbridge.activities.ControlCenterv2">
+    tools:context="nodomain.freeyourgadget.hsgadgetbridge.activities.ControlCenterv2">
 
     <ScrollView
         android:id="@+id/scrollView2"
         android:layout_width="match_parent"
-        android:layout_height="wrap_content">
+        android:layout_height="wrap_content"
+        android:layout_alignParentStart="true"
+        android:layout_alignParentTop="true">
 
         <android.support.v7.widget.GridLayout xmlns:android="http://schemas.android.com/apk/res/android"
             xmlns:grid="http://schemas.android.com/apk/res-auto"
@@ -29,8 +31,8 @@
             <Button
                 android:id="@+id/importDBButton"
                 android:text="Import DB"
-                grid:layout_gravity="center"
-                grid:layout_column="1" />
+                grid:layout_column="1"
+                grid:layout_gravity="center" />
 
 
             <TextView
@@ -49,6 +51,37 @@
                 android:textAppearance="?android:attr/textAppearanceMedium"
                 grid:layout_columnSpan="2"
                 grid:layout_columnWeight="1" />
+
+
+            <Button
+                android:id="@+id/syncDBButton"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="40dp"
+                android:text="HS-Sync" />
+
+            <TextView
+                android:id="@+id/syncText"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="40dp"
+                android:text="PToken"
+                android:textAppearance="?android:attr/textAppearanceSmall"
+                grid:layout_columnSpan="2"
+                grid:layout_columnWeight="1" />
+
+            <EditText
+                android:id="@+id/tokenText"
+                android:layout_width="180dp"
+                android:hint="@string/password_hint"
+                android:inputType="textUri" />
+
+            <Button
+                android:id="@+id/tokenButton"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="40dp"
+                android:text="Save token" />
 
 
             <TextView
@@ -86,7 +119,17 @@
                 android:layout_height="wrap_content"
                 android:text="Empty DB" />
 
+
+
+            <android.support.v7.widget.RecyclerView
+                android:id="@+id/my_recycler_view"
+                android:scrollbars="vertical"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                grid:layout_columnSpan="0" />
+
         </android.support.v7.widget.GridLayout>
+
 
     </ScrollView>
 

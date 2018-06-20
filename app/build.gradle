@@ -20,7 +20,7 @@ android {
     buildToolsVersion "27.0.3"
 
     defaultConfig {
-        applicationId "nodomain.freeyourgadget.gadgetbridge"
+        applicationId "nodomain.freeyourgadget.hsgadgetbridge"
         minSdkVersion 19
         targetSdkVersion 27
 
@@ -85,6 +85,8 @@ dependencies {
     implementation "org.greenrobot:greendao:2.2.1"
     implementation "org.apache.commons:commons-lang3:3.5"
     implementation "org.cyanogenmod:platform.sdk:6.0"
+    implementation 'com.android.volley:volley:1.1.0'
+    implementation 'com.android.support:recyclerview-v7:27.1.1'
 
 //    implementation project(":DaoCore")
 }
