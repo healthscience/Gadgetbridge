@@ -24,6 +24,7 @@ import android.database.sqlite.SQLiteOpenHelper;
 import android.net.Uri;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
+import android.widget.Toast;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -569,4 +570,5 @@ public class DBHelper {
             LOG.warn("Unable to acquire database to clear the session", e);
         }
     }
+
 }

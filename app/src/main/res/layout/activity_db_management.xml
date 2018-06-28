@@ -64,8 +64,28 @@
                 android:id="@+id/syncText"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="40dp"
-                android:text="PToken"
+                android:layout_marginTop="10dp"
+                android:text="Last Sync Date: "
+                android:textAppearance="?android:attr/textAppearanceSmall"
+                grid:layout_columnSpan="2"
+                grid:layout_columnWeight="1" />
+
+            <TextView
+                android:id="@+id/nowDate"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="10dp"
+                android:text="Now Date: "
+                android:textAppearance="?android:attr/textAppearanceSmall"
+                grid:layout_columnSpan="2"
+                grid:layout_columnWeight="1" />
+
+            <TextView
+                android:id="@+id/syncDate"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="10dp"
+                android:text="Success Sync Date: "
                 android:textAppearance="?android:attr/textAppearanceSmall"
                 grid:layout_columnSpan="2"
                 grid:layout_columnWeight="1" />

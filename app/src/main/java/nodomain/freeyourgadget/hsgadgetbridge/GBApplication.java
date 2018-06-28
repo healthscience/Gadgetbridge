@@ -32,6 +32,7 @@ import android.content.res.Configuration;
 import android.content.res.Resources;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
+import android.database.sqlite.SQLiteOpenHelper;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Build.VERSION;
@@ -40,6 +41,7 @@ import android.provider.ContactsContract.PhoneLookup;
 import android.support.v4.content.LocalBroadcastManager;
 import android.util.Log;
 import android.util.TypedValue;
+import android.widget.Toast;
 
 import java.io.File;
 import java.io.IOException;
@@ -67,6 +69,7 @@ import nodomain.freeyourgadget.hsgadgetbridge.util.GB;
 import nodomain.freeyourgadget.hsgadgetbridge.util.GBPrefs;
 import nodomain.freeyourgadget.hsgadgetbridge.util.LimitedQueue;
 import nodomain.freeyourgadget.hsgadgetbridge.util.Prefs;
+
 
 import static nodomain.freeyourgadget.hsgadgetbridge.util.GB.NOTIFICATION_CHANNEL_ID;
 
@@ -155,6 +158,7 @@ public class GBApplication extends Application {
             // setup db after the environment is set up, but don't do it in test mode
             // in test mode, it's done individually, see TestBase
             setupDatabase();
+
         }
 
         // don't do anything here before we set up logging, otherwise
@@ -234,6 +238,7 @@ public class GBApplication extends Application {
     }
 
     public void setupDatabase() {
+
         DaoMaster.OpenHelper helper;
         GBEnvironment env = GBEnvironment.env();
         if (env.isTest()) {
@@ -242,11 +247,14 @@ public class GBApplication extends Application {
             helper = new DBOpenHelper(this, DATABASE_NAME, null);
         }
         SQLiteDatabase db = helper.getWritableDatabase();
+
         DaoMaster daoMaster = new DaoMaster(db);
+
         if (lockHandler == null) {
             lockHandler = new LockHandler();
         }
         lockHandler.init(daoMaster, helper);
+
     }
 
     public static Context getContext() {
