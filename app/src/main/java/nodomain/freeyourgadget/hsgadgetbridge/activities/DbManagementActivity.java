@@ -297,7 +297,7 @@ public class DbManagementActivity extends AbstractGBActivity {
             tv.setText("Last sync date: " + lastsyncqdate);
             Toast.makeText(this, "SYNCING STARTED", Toast.LENGTH_LONG).show();
 
-            // display success data point
+            // display the last success data point
             TextView stv=(TextView)findViewById(R.id.syncDate);
             stv.setText("Success sync date: " + lastsyncqdate);
 
@@ -369,14 +369,14 @@ public class DbManagementActivity extends AbstractGBActivity {
             cursor.close();
             // find size of new LIST
             Integer allLength = all.size();
-            //Toast.makeText(getApplicationContext(),"New LIST length" + allLength, Toast.LENGTH_LONG).show();
+            Toast.makeText(getApplicationContext(),"New LIST length" + allLength, Toast.LENGTH_LONG).show();
 
             //prepare batches
             List batched = getBatches(all,1000);
             Integer batchLength = batched.size();
-            //Toast.makeText(getApplicationContext(),"Batched length" + batchLength, Toast.LENGTH_LONG).show();
+            Toast.makeText(getApplicationContext(),"Batched length" + batchLength, Toast.LENGTH_LONG).show();
 
-            if(syncLength <= 10 && syncLength != 0) {
+            if(syncLength <= 1000 && syncLength != 0) {
                 // make a put ie save to HS network
                 //TextView btv=(TextView)findViewById(R.id.syncText);
                 //btv.setText("RAW Batched chunk: " + batched.get(0).toString());
@@ -459,7 +459,7 @@ public class DbManagementActivity extends AbstractGBActivity {
             jsonArray = (JSONArray) json;
         }
 
-        arraysync = jsonArray;//mJSONArray;
+        arraysync = jsonArray;
         PostandRequestResponse();
 
     }
@@ -527,8 +527,9 @@ public class DbManagementActivity extends AbstractGBActivity {
             SQLiteDatabase db = sqLiteOpenHelper.getReadableDatabase();
             // update sqlite SYNC table
             db.execSQL("INSERT INTO NETWORK_SYNC_TIMESTAMP(SYNCSTAMP) VALUES ( " + localdata + " )");
-            //db.execSQL("INSERT INTO NETWORK_SYNC_TIMESTAMP(SYNCSTAMP) VALUES (1122334455)");
-            //Toast.makeText(getApplicationContext(), "updated SYNCSTAMP success", Toast.LENGTH_LONG).show();
+            //TextView stv=(TextView)findViewById(R.id.syncDate);
+            //stv.setText("Success sync date: " + localdata);
+            Toast.makeText(getApplicationContext(), "updated SYNCSTAMP success", Toast.LENGTH_LONG).show();
             db.close();
 
         } catch (Exception e) {
