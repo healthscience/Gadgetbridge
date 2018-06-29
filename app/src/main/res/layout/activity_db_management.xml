@@ -94,7 +94,7 @@
                 android:id="@+id/tokenText"
                 android:layout_width="180dp"
                 android:hint="@string/password_hint"
-                android:inputType="textUri" />
+                android:inputType="text" />
 
             <Button
                 android:id="@+id/tokenButton"
