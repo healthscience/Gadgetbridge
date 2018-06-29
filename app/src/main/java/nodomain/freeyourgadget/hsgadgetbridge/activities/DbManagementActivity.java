@@ -18,11 +18,14 @@
 package nodomain.freeyourgadget.hsgadgetbridge.activities;
 
 import android.app.AlertDialog;
+import android.content.Context;
 import android.content.DialogInterface;
 import android.content.SharedPreferences;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteOpenHelper;
+import android.net.ConnectivityManager;
+import android.net.NetworkInfo;
 import android.os.Bundle;
 import android.preference.PreferenceManager;
 import android.support.v4.app.NavUtils;
@@ -123,7 +126,16 @@ public class DbManagementActivity extends AbstractGBActivity {
         syncDBButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                syncDB();
+                // first check there is interenet connection
+                boolean InternetOn = isNetworkConnected();
+                if(InternetOn == true) {
+
+                    syncDB();
+                }
+                else {
+                    Toast.makeText(getApplicationContext(),"NO INTERNET CONNECTION", Toast.LENGTH_LONG).show();
+                }
+
             }
         });
 
@@ -529,8 +541,8 @@ public class DbManagementActivity extends AbstractGBActivity {
             db.execSQL("INSERT INTO NETWORK_SYNC_TIMESTAMP(SYNCSTAMP) VALUES ( " + localdata + " )");
             //TextView stv=(TextView)findViewById(R.id.syncDate);
             //stv.setText("Success sync date: " + localdata);
-            Toast.makeText(getApplicationContext(), "updated SYNCSTAMP success", Toast.LENGTH_LONG).show();
-            db.close();
+            Toast.makeText(getApplicationContext(), "updated SYNC success", Toast.LENGTH_LONG).show();
+
 
         } catch (Exception e) {
             e.printStackTrace();
@@ -540,6 +552,16 @@ public class DbManagementActivity extends AbstractGBActivity {
         }
 
      }
+
+    private boolean isNetworkConnected() {
+        ConnectivityManager cm = (ConnectivityManager)getSystemService(Context.CONNECTIVITY_SERVICE);
+        NetworkInfo netInfo = cm.getActiveNetworkInfo();
+        if (netInfo != null && netInfo.isConnectedOrConnecting()) {
+            return true;
+        } else {
+            return false;
+        }
+    }
 
     private void importDB() {
         new AlertDialog.Builder(this)
