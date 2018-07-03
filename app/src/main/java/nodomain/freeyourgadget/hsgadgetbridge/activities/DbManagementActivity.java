@@ -42,6 +42,7 @@ import com.android.volley.RequestQueue;
 import com.android.volley.Response;
 import com.android.volley.VolleyError;
 import com.android.volley.toolbox.JsonArrayRequest;
+import com.android.volley.toolbox.JsonObjectRequest;
 import com.android.volley.toolbox.StringRequest;
 import com.android.volley.toolbox.Volley;
 import com.google.gson.Gson;
@@ -84,14 +85,15 @@ public class DbManagementActivity extends AbstractGBActivity {
     private Button deleteDBButton;
     private Button syncDBButton;
     private Button tokenButton;
+    private Button pubkeyButton;
     private TextView dbPath;
 
     public static final String DATABASE_NAME = "Gadgetbridge";
 
     private RequestQueue mRequestQueue;
     private StringRequest mStringRequest;
-    private String url = "http://188.166.138.93:8882/";
-    private String urlsave = "http://188.166.138.93:8882/datamsave/";
+    private String url = "http://165.227.244.213:8881";//"http://188.166.138.93:8882/";
+    private String urlsave = "http://165.227.244.213:8881/datamsave/";//"http:// 188.166.138.93:8882/datamsave/";
     private String urltoken;
     private String editTokenStr;
     // holds sync data for POST call
@@ -148,7 +150,21 @@ public class DbManagementActivity extends AbstractGBActivity {
                  EditText editToken = (EditText)findViewById(R.id.tokenText);
                  String tokentoSave = editToken.getText().toString();
                  // save to sqlite
-                 checkSaveToken(tokentoSave);
+                 checkSaveToken(tokentoSave, "1");
+
+             }
+         });
+
+         // save publickey identity
+         pubkeyButton = findViewById(R.id.pubkeyButton);
+         pubkeyButton.setOnClickListener(new View.OnClickListener() {
+             @Override
+             public void onClick(View v) {
+
+                 EditText editToken = (EditText)findViewById(R.id.publickey);
+                 String keytoSave = editToken.getText().toString();
+                 // save to sqlite
+                 checkSaveToken(keytoSave, "2");
 
              }
          });
@@ -250,15 +266,19 @@ public class DbManagementActivity extends AbstractGBActivity {
 
             GB.toast(this, "getting ready for sync", Toast.LENGTH_LONG, GB.INFO);
 
+            // PUBLICKEY AND DATA COMPUTATIONAL REFERENCE - BOTH HASHES
+            String publickeyIN = queryToken("2");
+            String comrefIN = "8833734ffud90ejckKPQ";
+
             // get token from app
             EditText editToken = (EditText)findViewById(R.id.tokenText);
             String editTokenStr = editToken.getText().toString();
             //Toast.makeText(getApplicationContext(),"token in :" + editTokenStr, Toast.LENGTH_LONG).show();
 
             // form token URL  check if saved token
-            String liveToken = queryToken();
+            String liveToken = queryToken("1");
             if(liveToken != "none") {
-                urltoken = urlsave + liveToken;
+                urltoken = urlsave + publickeyIN + "/" + liveToken;
                 //Toast.makeText(getApplicationContext(),"token URL:" + urltoken, Toast.LENGTH_LONG).show();//di
 
                 // drop table
@@ -301,7 +321,6 @@ public class DbManagementActivity extends AbstractGBActivity {
                 // Filter results
                 String selectiond = "";
                 String[] selectionArgsd = {};
-
                 // How you want the results sorted in the resulting Cursor
                 String sortOrder =
                         "SYNCSTAMP" + " DESC";
@@ -382,13 +401,12 @@ public class DbManagementActivity extends AbstractGBActivity {
                     long heartrateIN = cursor.getLong(
                             cursor.getColumnIndexOrThrow("HEART_RATE"));
 
-                    //all.add(itemId);
-                    //JSONObject json = new JSONObject();
                     // form an object and add to array list
                     item.put("timestamp", itemId);
                     item.put("steps", stepsIN);
                     item.put("heartrate", heartrateIN);
-                    //itemIds.add(item);
+                    item.put("publickey", publickeyIN);
+                    item.put("compref", comrefIN);
                     all.add(item);
 
                 }
@@ -398,11 +416,11 @@ public class DbManagementActivity extends AbstractGBActivity {
                 //Toast.makeText(getApplicationContext(), "New LIST length" + allLength, Toast.LENGTH_LONG).show();
 
                 //prepare batches
-                List batched = getBatches(all, 1000);
+                List batched = getBatches(all, 100);
                 Integer batchLength = batched.size();
                 Toast.makeText(getApplicationContext(), "Batched length" + batchLength, Toast.LENGTH_LONG).show();
 
-                if (syncLength <= 1000 && syncLength != 0) {
+                if (syncLength <= 100 && syncLength != 0) {
                     // make a put ie save to HS network
                     //TextView btv=(TextView)findViewById(R.id.syncText);
                     //btv.setText("RAW Batched chunk: " + batched.get(0).toString());
@@ -425,9 +443,9 @@ public class DbManagementActivity extends AbstractGBActivity {
                             j++;
                             if (batchLength == j) {
 
-                                Toast.makeText(getApplicationContext(), "Data sync COMPLETE", Toast.LENGTH_SHORT).show();
+                                Toast.makeText(getApplicationContext(), "Batching COMPLETE", Toast.LENGTH_SHORT).show();
                                 TextView tvcomplete = (TextView) findViewById(R.id.syncText);
-                                tvcomplete.setText("SYNC COMPLETED");
+                                tvcomplete.setText("Batched COMPLETED");
                             }
                             // batch limit reached - form JSON and send
                             //Toast.makeText(getApplicationContext(), "Batch" + j, Toast.LENGTH_SHORT).show();
@@ -471,7 +489,6 @@ public class DbManagementActivity extends AbstractGBActivity {
 
     private void prepareSyncJSON (Object batchIN) {
         // form JSONarray
-        //JSONArray mJSONArray = new JSONArray(Arrays.asList(batchIN));
         Object json = null;
         JSONArray jsonArray = null;
         try {
@@ -491,16 +508,16 @@ public class DbManagementActivity extends AbstractGBActivity {
     private void PostandRequestResponse() {
 
         //Toast.makeText(getApplicationContext(),"token URL:" + urltoken, Toast.LENGTH_LONG).show();
-        //TextView stv=(TextView)findViewById(R.id.syncDate);
+        TextView stv=(TextView)findViewById(R.id.syncDate);
         //stv.setText("Godo JSON: " + arraysync.toString());
+        //stv.setText("Godo JSON: " + urltoken.toString());
 
-            //Toast.makeText(getApplicationContext(),"within POST:" + urltoken, Toast.LENGTH_LONG).show();//di
             // JsonObjectRequest JsonArrayRequest types of data to post
             JsonArrayRequest jsonObjectRequest = new JsonArrayRequest(Request.Method.POST, urltoken,arraysync,
                     new Response.Listener<JSONArray>() {
                         @Override
                         public void onResponse(JSONArray response) {
-                            //serverResp.setText("String Response : "+ response.toString());
+                            //.setText("String Response : "+ response.toString());
                             //Toast.makeText(getApplicationContext(),"String Response : "+ response.toString(), Toast.LENGTH_LONG).show();
 
                             // need if check save good then clear array object
@@ -575,7 +592,7 @@ public class DbManagementActivity extends AbstractGBActivity {
         }
     }
 
-    private boolean checkSaveToken(String tokenIN){
+    private boolean checkSaveToken(String tokenIN, String tidIN){
 
 
         String localtoken = tokenIN.toString();
@@ -598,13 +615,16 @@ public class DbManagementActivity extends AbstractGBActivity {
                 tableExists = true;
 
                 if(tableExists == true) {
-                    // then update the table with the new token
-                    //UPDATE myTable SET Column1 = someValue WHERE columnId = "+ someValue;
-                    db.execSQL("UPDATE TOKEN SET hashtoken = '" + tokenIN + "' WHERE TID = 1");
-                    //Toast.makeText(this, "Token UPDATED", Toast.LENGTH_LONG).show();
-                    // insert first sync date
-                    //db.execSQL("INSERT INTO TOKEN(TID, hashtoken) VALUES (2, " + localtoken + " )");
-                    Toast.makeText(this, "second UPDATED TOKEN", Toast.LENGTH_LONG).show();
+
+                    if(tidIN == "1") {
+                        // then update the table with the new token/key
+                        db.execSQL("UPDATE TOKEN SET hashtoken = '" + tokenIN + "' WHERE TID = 1");
+                        Toast.makeText(this, "second UPDATED TOKEN", Toast.LENGTH_LONG).show();
+                    }
+                    else if(tidIN == "2") {
+                        db.execSQL("UPDATE TOKEN SET hashtoken = '" + tokenIN + "' WHERE TID = 2");
+                        Toast.makeText(this, "second UPDATED PUBKEY", Toast.LENGTH_LONG).show();
+                    }
 
                 }
 
@@ -618,6 +638,8 @@ public class DbManagementActivity extends AbstractGBActivity {
                     // insert first sync date
                     db.execSQL("INSERT INTO TOKEN(TID, hashtoken) VALUES (1, '" + localtoken + "' )");
                     Toast.makeText(this, "insert first TOKEN", Toast.LENGTH_LONG).show();
+                    db.execSQL("INSERT INTO TOKEN(TID, hashtoken) VALUES (2, '0000000' )");
+                    Toast.makeText(this, "insert blank publickey", Toast.LENGTH_LONG).show();
                 }
 
 
@@ -634,7 +656,7 @@ public class DbManagementActivity extends AbstractGBActivity {
         return true;
     }
 
-    private String queryToken() {
+    private String queryToken(String typeid) {
 
         String tokenString;
          // query for token or ask to input
@@ -652,8 +674,8 @@ public class DbManagementActivity extends AbstractGBActivity {
             };
 
             // Filter results
-            String selectiond = "";
-            String[] selectionArgsd = { };
+            String selectiond = "TID = ?";
+            String[] selectionArgsd = {typeid};
 
             // How you want the results sorted in the resulting Cursor
             String sortOrder = "";
@@ -675,12 +697,18 @@ public class DbManagementActivity extends AbstractGBActivity {
 
         } catch (Exception e) {
             e.printStackTrace();
-            GB.toast(this, "error query token" + e.toString(), Toast.LENGTH_LONG, GB.ERROR, e);
-            //TextView stv=(TextView)findViewById(R.id.syncDate);
-            //stv.setText("insert token" + e.toString());
+            //GB.toast(this, "error query token" + e.toString(), Toast.LENGTH_LONG, GB.ERROR, e);
+            TextView stv=(TextView)findViewById(R.id.syncDate);
+            stv.setText("insert token" + e.toString());
             return "none";
         }
 
+    }
+
+    private boolean getPublickey() {
+
+
+         return true;
     }
 
     private void importDB() {

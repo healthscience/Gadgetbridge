@@ -32,7 +32,6 @@ import android.content.res.Configuration;
 import android.content.res.Resources;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
-import android.database.sqlite.SQLiteOpenHelper;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Build.VERSION;
@@ -41,7 +40,6 @@ import android.provider.ContactsContract.PhoneLookup;
 import android.support.v4.content.LocalBroadcastManager;
 import android.util.Log;
 import android.util.TypedValue;
-import android.widget.Toast;
 
 import java.io.File;
 import java.io.IOException;
@@ -52,6 +50,7 @@ import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
+
 
 import nodomain.freeyourgadget.hsgadgetbridge.database.DBHandler;
 import nodomain.freeyourgadget.hsgadgetbridge.database.DBHelper;
@@ -69,7 +68,6 @@ import nodomain.freeyourgadget.hsgadgetbridge.util.GB;
 import nodomain.freeyourgadget.hsgadgetbridge.util.GBPrefs;
 import nodomain.freeyourgadget.hsgadgetbridge.util.LimitedQueue;
 import nodomain.freeyourgadget.hsgadgetbridge.util.Prefs;
-
 
 import static nodomain.freeyourgadget.hsgadgetbridge.util.GB.NOTIFICATION_CHANNEL_ID;
 

@@ -103,6 +103,18 @@
                 android:layout_marginTop="40dp"
                 android:text="Save token" />
 
+            <EditText
+                android:id="@+id/publickey"
+                android:layout_width="180dp"
+                android:hint="identity"
+                android:inputType="text" />
+
+            <Button
+                android:id="@+id/pubkeyButton"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="40dp"
+                android:text="Save key" />
 
             <TextView
                 android:id="@+id/mergeOldActivityDataTitle"
