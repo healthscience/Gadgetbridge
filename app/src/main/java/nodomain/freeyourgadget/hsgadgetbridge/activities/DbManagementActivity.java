@@ -40,13 +40,11 @@ import android.widget.Toast;
 import com.android.volley.Request;
 import com.android.volley.RequestQueue;
 import com.android.volley.Response;
+import com.android.volley.Response.ErrorListener;
+import com.android.volley.Response.Listener;
 import com.android.volley.VolleyError;
 import com.android.volley.toolbox.JsonArrayRequest;
-import com.android.volley.toolbox.JsonObjectRequest;
 import com.android.volley.toolbox.StringRequest;
-import com.android.volley.toolbox.Volley;
-import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
 
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -57,10 +55,8 @@ import org.slf4j.LoggerFactory;
 
 import java.io.File;
 import java.io.IOException;
-import java.lang.reflect.Array;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
 import java.util.Date;
 import java.util.List;
 
@@ -94,7 +90,9 @@ public class DbManagementActivity extends AbstractGBActivity {
     private StringRequest mStringRequest;
     private String url = "http://165.227.244.213:8881";//"http://188.166.138.93:8882/";
     private String urlsave = "http://165.227.244.213:8881/datamsave/";//"http:// 188.166.138.93:8882/datamsave/";
+    private String urlsync = "http://165.227.244.213:8881/sync/";
     private String urltoken;
+    private String urlsyncdevice;
     private String editTokenStr;
     // holds sync data for POST call
     ArrayList batchdata;
@@ -288,54 +286,84 @@ public class DbManagementActivity extends AbstractGBActivity {
 
                 // need to check how many devices OR any new devices added?
                 List deviceList = queryDevices();
+                // need to create a new table to save sync data to ptop work
+                boolean tableExists = false;
+                /* get cursor on it */
+                try {
+                    db.query("NETWORK_SYNC_TIMESTAMP", null,
+                            null, null, null, null, null);
+                    tableExists = true;
+                } catch (Exception e) {
+                    /* no table set it up */
+                    db.execSQL("CREATE TABLE IF NOT EXISTS NETWORK_SYNC_TIMESTAMP(DEVICE_ID INTEGER, SYNCSTAMP INTEGER NOT NULL)");
+                    Toast.makeText(this, "Database Created SYNC", Toast.LENGTH_LONG).show();
+
+                    for (int i = 0; i < deviceList.size(); i++) {
+                        JSONObject listd = (JSONObject) deviceList.get(i);
+                        //String first = (String) deviceList.get(0); getJSONObject
+                        //Toast.makeText(this, "queryDevice element == " + listd, Toast.LENGTH_LONG).show();
+                        String deviceID = listd.getString("_id");
+                        // insert first sync date
+                        db.execSQL("INSERT INTO NETWORK_SYNC_TIMESTAMP(DEVICE_ID, SYNCSTAMP) VALUES ('" + deviceID + "', 0000000001)");
+                        Toast.makeText(this, "insert base syncstamp", Toast.LENGTH_LONG).show();
+                    }
+
+                }
+
                 // loop over device list and sync the data
                 for (int i = 0; i < deviceList.size(); i++) {
 
                     JSONObject listd = (JSONObject) deviceList.get(i);
                     //String first = (String) deviceList.get(0); getJSONObject
-                    Toast.makeText(this, "queryDevice element == " + listd, Toast.LENGTH_LONG).show();
+                    //Toast.makeText(this, "queryDevice element == " + listd, Toast.LENGTH_LONG).show();
                     String deviceID = listd.getString("_id");
+                    //Toast.makeText(this, "device ID == " + deviceID, Toast.LENGTH_LONG).show();
                     JSONObject listdM = (JSONObject) deviceList.get(i);
                     //String first = (String) deviceList.get(0); getJSONObject
                     //Toast.makeText(this, "queryDevice element == " + listd, Toast.LENGTH_LONG).show();
                     String deviceMac = listdM.getString("IDENTIFER");
 
+                    urlsyncdevice = urlsync + publickeyIN + "/" + liveToken + "/" + deviceMac;
 
-                     // need to create a new table to save sync data to ptop work
-                    boolean tableExists = false;
-                    /* get cursor on it */
-                    try {
-                        db.query("NETWORK_SYNC_TIMESTAMP", null,
-                                null, null, null, null, null);
-                        tableExists = true;
-                    } catch (Exception e) {
-                        /* no table set it up */
-                        db.execSQL("CREATE TABLE IF NOT EXISTS NETWORK_SYNC_TIMESTAMP(DEVICE_ID INTEGER, SYNCSTAMP INTEGER PRIMARY KEY NOT NULL)");
-                        Toast.makeText(this, "Database Created SYNC", Toast.LENGTH_LONG).show();
+                    // Make network API call to get last sync date from storage
 
-                        // insert first sync date
-                        db.execSQL("INSERT INTO NETWORK_SYNC_TIMESTAMP(DEVICE_ID, SYNCSTAMP) VALUES ('" + deviceID + "', 0000000001)");
-                        Toast.makeText(this, "insert base syncstamp", Toast.LENGTH_LONG).show();
-
+                    syncData(deviceID, deviceMac, publickeyIN, comrefIN);
                     }
+            }
+        } catch (Exception ex) {
+            //GB.toast(this, "error with PRE sync", Toast.LENGTH_LONG, GB.ERROR, ex);
+        }
 
-                    // form query to get last sync date
-                    Date liveDate;
-                    Long longmillseconds;
-                    Long millseconds;
-                    liveDate = DateTimeUtils.todayUTC();
-                    longmillseconds = liveDate.getTime();
-                    millseconds = longmillseconds / 1000;
-                    //GB.toast(this, "date right now:" + millseconds, Toast.LENGTH_LONG, GB.INFO);
+    }
 
-                    // query last sync table to get last sync date
+    public void syncData(final String deviceID, final String deviceMac, final String publickeyIN, final String comrefIN) {
+        
+        getSyncResponse(new DataCallback() {
+            String lastsyncitem;
+            @Override
+            public void onSuccess(JSONObject result) {
+                lastsyncitem = result.optString("timestamp");
+                //Toast.makeText(getApplicationContext(),"SYNC element : "+ lastsyncitem, Toast.LENGTH_LONG).show();
+
+                // process next batch of syning
+
+                // form query to get last sync date
+                Date liveDate;
+                Long longmillseconds;
+                Long millseconds;
+                liveDate = DateTimeUtils.todayUTC();
+                longmillseconds = liveDate.getTime();
+                millseconds = longmillseconds / 1000;
+
+                // query last sync table to get last sync date
+                    /*
                     String[] projectiond = {
                             "SYNCSTAMP"
                     };
 
                     // Filter results
-                    String selectiond = "";
-                    String[] selectionArgsd = {};
+                    String selectiond = "DEVICE_ID = ?";
+                    String[] selectionArgsd = {deviceID};
                     // How you want the results sorted in the resulting Cursor
                     String sortOrder =
                             "SYNCSTAMP" + " DESC";
@@ -351,159 +379,214 @@ public class DbManagementActivity extends AbstractGBActivity {
                     );
 
                     lastsync.moveToFirst();
-                    String lastsyncqdate = lastsync.getString(lastsync.getColumnIndex("SYNCSTAMP"));
 
-                    TextView tv = (TextView) findViewById(R.id.syncText);
-                    tv.setText("Last sync date: " + lastsyncqdate);
-                    Toast.makeText(this, "SYNCING STARTED", Toast.LENGTH_LONG).show();
+                    //String lastsyncqdate = lastsync.getString(lastsync.getColumnIndex("SYNCSTAMP"));
+                    //Integer lastsyncDate3 = lastsync.getInt(lastsync.getColumnIndex("SYNCSTAMP"));
 
-                    // display the last success data point
-                    TextView stv = (TextView) findViewById(R.id.syncDate);
-                    stv.setText("Success sync date: " + lastsyncqdate);
+                    Long lastsyncData3 = Long.valueOf(Integer.parseInt(lastsync.getString(lastsync.getColumnIndex("SYNCSTAMP"))));
+                    long datemillprev = Long.valueOf(lastsyncData3 * 1000);
+                    //Toast.makeText(this, "last syn date===" + datemillprev, Toast.LENGTH_LONG).show();
 
-                    lastsyncDate = lastsyncqdate;//"1526033220";//lastsyncqdate;
-                    nowDate = millseconds.toString();//"1529666370";//millseconds.toString();
+                    //String lastsyncqdate = lastsync.getString(lastsync.getColumnIndex("SYNCSTAMP"));
+                    */
+                long lastsyncData3 = Integer.parseInt(lastsyncitem);
+                long datemillprev = Long.valueOf(lastsyncData3 * 1000);
+                Integer addtick =  Integer.parseInt(lastsyncitem);
+                Integer startQuerytime = addtick + 2;
+                String newstartQuery = startQuerytime.toString();
 
-                    // display now date
-                    TextView ntv = (TextView) findViewById(R.id.nowDate);
-                    ntv.setText("NOW date: " + nowDate);
+                long msTime = System.currentTimeMillis();
+                SimpleDateFormat formatter = new SimpleDateFormat("MM'/'dd'/'y hh:mm aa");
+                String curDate = formatter.format(datemillprev);
+                //Toast.makeText(getApplicationContext(),"deviceID" + deviceID, Toast.LENGTH_LONG).show();
+                //Toast.makeText(getApplicationContext(),"last syncDate" + curDate, Toast.LENGTH_LONG).show();
 
-                    Toast.makeText(this, "DEVICE ID? " + deviceID, Toast.LENGTH_LONG).show();
-                    // form the query for data
-                    // Define a projection that specifies which columns from the database
-                    // you will actually use after this query.
-                    String[] projection = {
-                            "TIMESTAMP",
-                            "STEPS",
-                            "HEART_RATE"
-                    };
+                //Toast.makeText(this, "human date" + curDate, Toast.LENGTH_LONG).show();
+                TextView tv = (TextView) findViewById(R.id.syncText);
+                tv.setText("Last sync date: " + curDate);
+                Toast.makeText(getApplicationContext(),"SYNCING", Toast.LENGTH_LONG).show();
 
-                    // Filter results
-                    String selection = "DEVICE_ID" + " = ? AND TIMESTAMP BETWEEN ? AND ?";
-                    String[] selectionArgs = {deviceID, lastsyncDate, nowDate};
+                nowDate = millseconds.toString();//"1529666370";//millseconds.toString();
 
-                    // How you want the results sorted in the resulting Cursor
-                    String sortOrderd =
-                            "TIMESTAMP" + " ASC";
 
-                    Cursor cursor = db.query(
-                            "MI_BAND_ACTIVITY_SAMPLE",   // The table to query
-                            projection,             // The array of columns to return (pass null to get all)
-                            selection,              // The columns for the WHERE clause
-                            selectionArgs,          // The values for the WHERE clause
-                            null,                   // don't group the rows
-                            null,                   // don't filter by row groups
-                            sortOrderd               // The sort order
-                    );
+                //Date resultdate = sdf.parse(nowDate);
+                TextView ntv = (TextView) findViewById(R.id.nowDate);
+                ntv.setText("NOW date: " + liveDate);
 
-                    String message = null;
-                    // iterate of data in cursor form/ pass data on to volley
-                    // find size of data
-                    Integer syncLength = cursor.getCount();
-                    //Toast.makeText(getApplicationContext(),"cursor length" + syncLength, Toast.LENGTH_LONG).show();
+                // make backup on mobile app of sync date
+                syncTimestampDB(newstartQuery, deviceID);
 
-                    // first prepare normal list array from Cursor to allow sublit operation to batch
-                    List all = new ArrayList<>();
-                    while (cursor.moveToNext()) {
-
-                        JSONObject item = new JSONObject();
-
-                        long itemId = cursor.getLong(
-                                cursor.getColumnIndexOrThrow("TIMESTAMP"));
-                        long stepsIN = cursor.getLong(
-                                cursor.getColumnIndexOrThrow("STEPS"));
-                        long heartrateIN = cursor.getLong(
-                                cursor.getColumnIndexOrThrow("HEART_RATE"));
-
-                        // form an object and add to array list
-                        item.put("deviceid", deviceMac);
-                        item.put("timestamp", itemId);
-                        item.put("steps", stepsIN);
-                        item.put("heartrate", heartrateIN);
-                        item.put("publickey", publickeyIN);
-                        item.put("compref", comrefIN);
-                        all.add(item);
-
-                    }
-                    cursor.close();
-                    // find size of new LIST
-                    Integer allLength = all.size();
-                    //Toast.makeText(getApplicationContext(), "New LIST length" + allLength, Toast.LENGTH_LONG).show();
-
-                    //prepare batches
-                    List batched = getBatches(all, 100);
-                    Integer batchLength = batched.size();
-                    Toast.makeText(getApplicationContext(), "Batched length" + batchLength, Toast.LENGTH_LONG).show();
-
-                    if (syncLength <= 100 && syncLength != 0) {
-                        // make a put ie save to HS network
-                        //TextView btv=(TextView)findViewById(R.id.syncText);
-                        //btv.setText("RAW Batched chunk: " + batched.get(0).toString());
-                        //Toast.makeText(getApplicationContext(),"Length under 1000", Toast.LENGTH_LONG).show();
-                        prepareSyncJSON((List) batched.get(0), i);
-
-                    } else {
-                        // save every
-                        //Toast.makeText(getApplicationContext(),"Length OVER 1000 or Zero", Toast.LENGTH_LONG).show();
-                        //if zero nothing to update
-                        //else batch and sync
-                        if (syncLength == 0) {
-                            Toast.makeText(getApplicationContext(), "Nothing to Sync", Toast.LENGTH_LONG).show();
-
-                        } else {
-                            Toast.makeText(getApplicationContext(), "Preparing Batches for Sync", Toast.LENGTH_LONG).show();
-                            // itterate batch listed
-                            int j = 0;
-                            while (batched.size() > j) {
-                                j++;
-                                if (batchLength == j) {
-
-                                    Toast.makeText(getApplicationContext(), "Batching COMPLETE", Toast.LENGTH_SHORT).show();
-                                    TextView tvcomplete = (TextView) findViewById(R.id.syncText);
-                                    tvcomplete.setText("Batched COMPLETED");
-                                }
-                                // batch limit reached - form JSON and send
-                                //Toast.makeText(getApplicationContext(), "Batch" + j, Toast.LENGTH_SHORT).show();
-                                // extract/pass on data to
-                                prepareSyncJSON((List) batched.get(j), i);
-
-                            }
-                        }
-                    }
-                }
-            }
-        } catch (Exception ex) {
-            //GB.toast(this, "error with PRE sync", Toast.LENGTH_LONG, GB.ERROR, ex);
-        }
-
-    }
-
-    private void sendAndRequestResponse() {
-
-        //RequestQueue initialized
-        mRequestQueue = Volley.newRequestQueue(this);
-
-        //String Request initialized
-        mStringRequest = new StringRequest(Request.Method.GET, url, new Response.Listener<String>() {
-            @Override
-            public void onResponse(String response) {
-
-                Toast.makeText(getApplicationContext(),"Response :" + response.toString(), Toast.LENGTH_LONG).show();//display the response on screen
-
-            }
-        }, new Response.ErrorListener() {
-            @Override
-            public void onErrorResponse(VolleyError error) {
-
-                Log.i(null,"Error :" + error.toString());
+                //Toast.makeText(this, "DEVICE ID? " + deviceID, Toast.LENGTH_LONG).show();
+                queryDeviceData(deviceID, deviceMac, publickeyIN, comrefIN, nowDate, newstartQuery);
             }
         });
 
-        mRequestQueue.add(mStringRequest);
     }
 
-    private void prepareSyncJSON (Object batchIN, int didIN) {
+    public interface DataCallback {
+        void onSuccess(JSONObject result);
+    }
+
+    private String getSyncResponse(final DataCallback callback) {
+
+        //Toast.makeText(getApplicationContext(),"Sync URL:" + urlsyncdevice, Toast.LENGTH_LONG).show();
+
+        JsonArrayRequest jsonObjectRequest = new JsonArrayRequest(Request.Method.GET, urlsyncdevice, null,
+                new Response.Listener<JSONArray>() {
+
+                    @Override
+                    public void onResponse(JSONArray response) {
+                        //Toast.makeText(getApplicationContext(),"String Response : "+ response.toString(), Toast.LENGTH_LONG).show();
+                        // extract first JSONobject from array
+                        JSONObject firstEntry = null;
+                        try {
+                            firstEntry = response.getJSONObject(response.length()-1);
+                            //Toast.makeText(getApplicationContext(),"FIRST : "+ firstEntry.toString(), Toast.LENGTH_LONG).show();
+                            //String lastsyncitem = firstEntry.optString("timestamp");
+                            //Toast.makeText(getApplicationContext(),"SYNC element : "+ lastsyncitem, Toast.LENGTH_LONG).show();
+                            callback.onSuccess(firstEntry);
+
+                        } catch (JSONException e) {
+                            e.printStackTrace();
+                        }
+
+                    }
+                }, new Response.ErrorListener() {
+
+                    @Override
+                    public void onErrorResponse(VolleyError error) {
+                        // TODO: Handle error
+
+                    }
+                });
+
+        // Access the RequestQueue through your singleton class.
+        VolleySingleton.getInstance(this).addToRequestQueue(jsonObjectRequest);
+
+        return null;
+    }
+
+    private void queryDeviceData(String deviceID, String deviceMac, String publickeyIN, String comrefIN, String nowTimeIN, String syncTimeIn) {
+
+        // query for token or ask to input
+        try (DBHandler dbHandler = GBApplication.acquireDB()) {
+            exportShared();
+            DBHelper helper = new DBHelper(this);
+            // setup sqllite connection manual method ie not DAO
+            SQLiteOpenHelper sqLiteOpenHelper = dbHandler.getHelper();
+            SQLiteDatabase db = sqLiteOpenHelper.getReadableDatabase();
+            // form query
+            // form the query for data
+            // Define a projection that specifies which columns from the database
+            // you will actually use after this query.
+            String[] projection = {
+                    "TIMESTAMP",
+                    "STEPS",
+                    "HEART_RATE"
+            };
+
+            //Toast.makeText(getApplicationContext(),"query data sync start time : "+ syncTimeIn, Toast.LENGTH_LONG).show();
+            //Toast.makeText(getApplicationContext(),"query data sync end time : "+ nowTimeIN, Toast.LENGTH_LONG).show();
+            // Filter results
+            String selection = "DEVICE_ID" + " = ? AND TIMESTAMP BETWEEN ? AND ?";
+            String[] selectionArgs = {deviceID, syncTimeIn, nowTimeIN};
+
+            // How you want the results sorted in the resulting Cursor
+            String sortOrderd =
+                    "TIMESTAMP" + " ASC";
+
+            Cursor cursor = db.query(
+                    "MI_BAND_ACTIVITY_SAMPLE",   // The table to query
+                    projection,             // The array of columns to return (pass null to get all)
+                    selection,              // The columns for the WHERE clause
+                    selectionArgs,          // The values for the WHERE clause
+                    null,                   // don't group the rows
+                    null,                   // don't filter by row groups
+                    sortOrderd               // The sort order
+            );
+
+            String message = null;
+            // iterate of data in cursor form/ pass data on to volley
+            // find size of data
+            Integer syncLength = cursor.getCount();
+            //Toast.makeText(getApplicationContext(),"cursor length" + syncLength, Toast.LENGTH_LONG).show();
+
+            // first prepare normal list array from Cursor to allow sublit operation to batch
+            List all = new ArrayList<>();
+            while (cursor.moveToNext()) {
+
+                JSONObject item = new JSONObject();
+
+                long itemId = cursor.getLong(
+                        cursor.getColumnIndexOrThrow("TIMESTAMP"));
+                long stepsIN = cursor.getLong(
+                        cursor.getColumnIndexOrThrow("STEPS"));
+                long heartrateIN = cursor.getLong(
+                        cursor.getColumnIndexOrThrow("HEART_RATE"));
+
+                // form an object and add to array list
+                item.put("deviceid", deviceMac);
+                item.put("timestamp", itemId);
+                item.put("steps", stepsIN);
+                item.put("heartrate", heartrateIN);
+                item.put("publickey", publickeyIN);
+                item.put("compref", comrefIN);
+                all.add(item);
+
+            }
+            cursor.close();
+            // find size of new LIST
+            Integer allLength = all.size();
+            //Toast.makeText(getApplicationContext(), "New LIST length" + allLength, Toast.LENGTH_LONG).show();
+
+            //prepare batches
+            List batched = getBatches(all, 100);
+            Integer batchLength = batched.size();
+            Toast.makeText(getApplicationContext(), "Batched length" + batchLength, Toast.LENGTH_LONG).show();
+
+            if (syncLength <= 100 && syncLength != 0) {
+                // make a put ie save to HS network
+                //TextView btv=(TextView)findViewById(R.id.syncText);
+                //btv.setText("RAW Batched chunk: " + batched.get(0).toString());
+                //Toast.makeText(getApplicationContext(),"Length under 1000", Toast.LENGTH_LONG).show();
+                prepareSyncJSON((List) batched.get(0), deviceID);
+
+            } else {
+                // save every
+                //Toast.makeText(getApplicationContext(),"Length OVER 1000 or Zero", Toast.LENGTH_LONG).show();
+                //if zero nothing to update
+                //else batch and sync
+                if (syncLength == 0) {
+                    Toast.makeText(getApplicationContext(), "Nothing to Sync", Toast.LENGTH_LONG).show();
+
+                } else {
+                    //Toast.makeText(getApplicationContext(), "Preparing Batches for Sync", Toast.LENGTH_LONG).show();
+                    // itterate batch listed
+                    int j = 0;
+                    while (batched.size() > j) {
+                        j++;
+                        if (batchLength == j) {
+
+                            Toast.makeText(getApplicationContext(), "Batching COMPLETE", Toast.LENGTH_SHORT).show();
+                            TextView tvcomplete = (TextView) findViewById(R.id.syncText);
+                            tvcomplete.setText("Batched COMPLETED");
+                        }
+                        // batch limit reached - form JSON and send
+                        //Toast.makeText(getApplicationContext(), "Batch" + j, Toast.LENGTH_SHORT).show();
+                        // extract/pass on data to
+                        prepareSyncJSON((List) batched.get(j), deviceID);
+
+                    }
+                }
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
+    private void prepareSyncJSON (Object batchIN, String didIN) {
         // form JSONarray
+        //Toast.makeText(getApplicationContext(),"prepare ID:" + didIN, Toast.LENGTH_LONG).show();
         Object json = null;
         JSONArray jsonArray = null;
         try {
@@ -515,12 +598,12 @@ public class DbManagementActivity extends AbstractGBActivity {
             jsonArray = (JSONArray) json;
         }
 
-        arraysync = jsonArray;
-        PostandRequestResponse(didIN);
+        //arraysync = jsonArray;
+        PostandRequestResponse(didIN, jsonArray);
 
     }
 
-    private void PostandRequestResponse(final int didIN) {
+    private void PostandRequestResponse(final String didIN, final JSONArray syncDataIn) {
 
         //Toast.makeText(getApplicationContext(),"token URL:" + urltoken, Toast.LENGTH_LONG).show();
         TextView stv=(TextView)findViewById(R.id.syncDate);
@@ -528,26 +611,27 @@ public class DbManagementActivity extends AbstractGBActivity {
         //stv.setText("Godo JSON: " + urltoken.toString());
 
             // JsonObjectRequest JsonArrayRequest types of data to post
-            JsonArrayRequest jsonObjectRequest = new JsonArrayRequest(Request.Method.POST, urltoken,arraysync,
-                    new Response.Listener<JSONArray>() {
+            JsonArrayRequest jsonObjectRequest = new JsonArrayRequest(Request.Method.POST, urltoken, syncDataIn,
+                    new Listener<JSONArray>() {
                         @Override
                         public void onResponse(JSONArray response) {
                             //.setText("String Response : "+ response.toString());
                             //Toast.makeText(getApplicationContext(),"String Response : "+ response.toString(), Toast.LENGTH_LONG).show();
 
                             // need if check save good then clear array object
-                            JSONObject tot_obj = null;
-                            try {
-                                tot_obj = arraysync.getJSONObject(arraysync.length()-1);
-                            } catch (JSONException e) {
-                                e.printStackTrace();
-                            }
+                            //JSONObject tot_obj = null;
+                           // try {
+                            //    tot_obj = syncDataIn.getJSONObject(syncDataIn.length()-1);
+                            //} catch (JSONException e) {
+                             //   e.printStackTrace();
+                            //}
 
-                            String lastsyncitem = tot_obj.optString("timestamp");
-                            syncTimestampDB(lastsyncitem, didIN);
+                            //String lastsyncitem = tot_obj.optString("timestamp");
+                            //Toast.makeText(getApplicationContext(),"pre sync intersrt call : "+ didIN, Toast.LENGTH_LONG).show();
+                            //syncTimestampDB(lastsyncitem, didIN);
 
                         }
-                    }, new Response.ErrorListener() {
+                    }, new ErrorListener() {
                 @Override
                 public void onErrorResponse(VolleyError error) {
                     //serverResp.setText("Error getting response");
@@ -558,15 +642,14 @@ public class DbManagementActivity extends AbstractGBActivity {
 
             VolleySingleton.getInstance(this).addToRequestQueue(jsonObjectRequest);
 
-
     }
 
-    // save last sync timestamp to sqlite
-    private void syncTimestampDB(String syncdataIN, int dID) {
+    // save last sync timestamp to sqlite as a backup, Primary Chick is to network
+    private void syncTimestampDB(String syncdataIN, String dID) {
 
-        //Toast.makeText(getApplicationContext(), "before add one", Toast.LENGTH_LONG).show();
+        //Toast.makeText(getApplicationContext(), "device ID entereing sync insert" + dID, Toast.LENGTH_LONG).show();
         Integer addone =  Integer.parseInt(syncdataIN);
-        Integer addtwo = addone + 1;
+        Integer addtwo = addone + 2;
         //Toast.makeText(getApplicationContext(), "after one add", Toast.LENGTH_LONG).show();
 
         String localdata = addtwo.toString();
@@ -583,16 +666,24 @@ public class DbManagementActivity extends AbstractGBActivity {
             SQLiteDatabase db = sqLiteOpenHelper.getReadableDatabase();
             // update sqlite SYNC table
             db.execSQL("INSERT INTO NETWORK_SYNC_TIMESTAMP(DEVICE_ID, SYNCSTAMP) VALUES ( " + dID + ", " + localdata + " )");
-            //TextView stv=(TextView)findViewById(R.id.syncDate);
-            //stv.setText("Success sync date: " + localdata);
-            Toast.makeText(getApplicationContext(), "updated SYNC success", Toast.LENGTH_LONG).show();
+
+
+            Long lastsyncData4 = Long.valueOf(Integer.parseInt(localdata));
+            long dateLatestsucess = Long.valueOf(lastsyncData4 * 1000);
+
+            long msTime = System.currentTimeMillis();
+            SimpleDateFormat formatter = new SimpleDateFormat("MM'/'dd'/'y hh:mm aa");
+            String curDateSuccess = formatter.format(dateLatestsucess);
+            TextView stv=(TextView)findViewById(R.id.syncDate);
+            stv.setText("New success sync date: " + curDateSuccess);
+            Toast.makeText(getApplicationContext(), "updated SYNC success", Toast.LENGTH_SHORT).show();
 
 
         } catch (Exception e) {
             e.printStackTrace();
             //tv.setText("error SYNSTAMP: " + e.toString());
 
-            //GB.toast(this, "error syncstamp" + e.toString(), Toast.LENGTH_LONG, GB.ERROR, e);
+            GB.toast(this, "error syncstamp" + e.toString(), Toast.LENGTH_LONG, GB.ERROR, e);
         }
 
      }
@@ -634,11 +725,11 @@ public class DbManagementActivity extends AbstractGBActivity {
                     if(tidIN == "1") {
                         // then update the table with the new token/key
                         db.execSQL("UPDATE TOKEN SET hashtoken = '" + tokenIN + "' WHERE TID = 1");
-                        Toast.makeText(this, "second UPDATED TOKEN", Toast.LENGTH_LONG).show();
+                        Toast.makeText(this, "second UPDATED TOKEN", Toast.LENGTH_SHORT).show();
                     }
                     else if(tidIN == "2") {
                         db.execSQL("UPDATE TOKEN SET hashtoken = '" + tokenIN + "' WHERE TID = 2");
-                        Toast.makeText(this, "second UPDATED PUBKEY", Toast.LENGTH_LONG).show();
+                        Toast.makeText(this, "second UPDATED PUBKEY", Toast.LENGTH_SHORT).show();
                     }
 
                 }
@@ -771,11 +862,9 @@ public class DbManagementActivity extends AbstractGBActivity {
             }
 
             String listdb = deviceArray.toString();
-            //String first = (String) deviceList.get(0);
             //Toast.makeText(this, "queryDevice query LIST == " + listdb, Toast.LENGTH_LONG).show();
 
             liveDevices.close();
-
             return deviceArray;
 
         } catch (Exception e) {
