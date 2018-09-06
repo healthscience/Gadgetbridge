@@ -85,7 +85,7 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="10dp"
-                android:text="Success Sync Date: "
+                android:text="Sync confirmation: "
                 android:textAppearance="?android:attr/textAppearanceSmall"
                 grid:layout_columnSpan="2"
                 grid:layout_columnWeight="1" />
