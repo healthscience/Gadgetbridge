@@ -494,8 +494,8 @@ public class DbManagementActivity extends AbstractGBActivity {
             //Toast.makeText(getApplicationContext(),"query data sync start time : "+ syncTimeIn, Toast.LENGTH_LONG).show();
             //Toast.makeText(getApplicationContext(),"query data sync end time : "+ nowTimeIN, Toast.LENGTH_LONG).show();
             //Toast.makeText(getApplicationContext(),"query for device ID = " + deviceID, Toast.LENGTH_LONG).show();
-            //syncTimeIn = "1536188400";
-            //nowTimeIN = "1536274799";
+            //syncTimeIn = "1535925240";
+            //nowTimeIN = "1536313861";
             // Filter results
             String selection = "DEVICE_ID" + " = ? AND TIMESTAMP BETWEEN ? AND ?";
             String[] selectionArgs = {deviceID, syncTimeIn, nowTimeIN};
@@ -543,7 +543,8 @@ public class DbManagementActivity extends AbstractGBActivity {
 
                 // form an object and add to array list
                 item.put("timestamp", timeId);
-                item.put("device_id", deviceMac);
+                item.put("device_mac", deviceMac);
+                item.put("device_id", devicegId);
                 item.put("user_id",userId);
                 item.put("raw_intensity", rawiId);
                 item.put("steps", stepsId);
