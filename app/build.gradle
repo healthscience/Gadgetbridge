@@ -16,13 +16,13 @@ android {
         sourceCompatibility JavaVersion.VERSION_1_7
         targetCompatibility JavaVersion.VERSION_1_7
     }
-    compileSdkVersion 27
-    buildToolsVersion "27.0.3"
+    compileSdkVersion 28
+    buildToolsVersion "28.0.3"
 
     defaultConfig {
         applicationId "nodomain.freeyourgadget.hsgadgetbridge"
         minSdkVersion 19
-        targetSdkVersion 27
+        targetSdkVersion 28
 
         // Note: always bump BOTH versionCode and versionName!
         versionName "0.26.2"
